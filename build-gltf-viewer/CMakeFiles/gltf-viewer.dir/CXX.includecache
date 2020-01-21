@@ -2031,6 +2031,8 @@ stb_image_write.h
 -
 tiny_gltf.h
 -
+utils/gltf.hpp
+/home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/apps/gltf-viewer/utils/gltf.hpp
 
 /home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/apps/gltf-viewer/ViewerApplication.hpp
 utils/GLFWHandle.hpp
@@ -2084,6 +2086,12 @@ experimental/filesystem
 glad/glad.h
 -
 GLFW/glfw3.h
+-
+
+/home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/apps/gltf-viewer/utils/gltf.hpp
+glm/glm.hpp
+-
+tiny_gltf.h
 -
 
 /home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/apps/gltf-viewer/utils/shaders.hpp

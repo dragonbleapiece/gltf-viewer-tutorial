@@ -12,14 +12,12 @@
 
 #include <stb_image_write.h>
 #include <tiny_gltf.h>
+#include "utils/gltf.hpp"
 
 // Each vertex attribute is identified by an index
 // What vertex attribute we use, and what are their index is defined by the vertex shader
 // we will use (more information later).
 // position, normal and texcoord is pretty standard for 3D applications
-const GLuint VERTEX_ATTRIB_POSITION_IDX = 0;
-const GLuint VERTEX_ATTRIB_NORMAL_IDX = 1;
-const GLuint VERTEX_ATTRIB_TEXCOORD0_IDX = 2;
 const std::vector<std::string> ATTRIBUTES = {"POSITION", "NORMAL", "TEXCOORD_0"};
 
 void keyCallback(
@@ -65,7 +63,9 @@ int ViewerApplication::run()
 
   tinygltf::Model model;
   // TODO Loading the glTF file
-  loadGltfFile(model);
+  if(!loadGltfFile(model)) {
+    return -1;
+  }
 
   // TODO Creation of Buffer Objects
   std::vector<GLuint> bufferObjects = createBufferObjects(model);
@@ -91,12 +91,52 @@ int ViewerApplication::run()
     const std::function<void(int, const glm::mat4 &)> drawNode =
         [&](int nodeIdx, const glm::mat4 &parentMatrix) {
           // TODO The drawNode function
+          const auto &node = model.nodes[nodeIdx];
+
+          glm::mat4 modelMatrix = getLocalToWorldMatrix(node, parentMatrix);
+
+          if(node.mesh >= 0) {
+            const glm::mat4 modelViewMatrix = viewMatrix * modelMatrix;
+            const glm::mat4 modelViewProjMatrix = projMatrix * modelViewMatrix;
+            const glm::mat4 normalMatrix = glm::transpose(glm::inverse(modelViewMatrix));
+
+            glUniformMatrix4fv(modelViewMatrixLocation, 1, GL_FALSE, glm::value_ptr(modelViewMatrix));
+            glUniformMatrix4fv(modelViewProjMatrixLocation, 1, GL_FALSE, glm::value_ptr(modelViewProjMatrix));
+            glUniformMatrix4fv(normalMatrixLocation, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+
+            const auto &mesh = model.meshes[node.mesh];
+            const auto &vaoRange = meshIndexToVaoRange[node.mesh];
+
+            for(size_t primitiveIdx = 0; primitiveIdx < mesh.primitives.size(); ++primitiveIdx) {
+              const auto &primitive = mesh.primitives[primitiveIdx];
+              const GLuint vao = vertexArrayObjects[vaoRange.begin + primitiveIdx];
+
+              glBindVertexArray(vao);
+
+              if(primitive.indices >= 0) {
+                const auto &accessor = model.accessors[primitive.indices];
+                const auto &bufferView = model.bufferViews[accessor.bufferView];
+                const auto byteOffset = bufferView.byteOffset + accessor.byteOffset;
+
+                glDrawElements(primitive.mode, GLsizei(accessor.count), accessor.componentType,(const GLvoid*)byteOffset);
+              } else {
+                const auto accessorIdx = (*begin(primitive.attributes)).second;
+                const auto &accessor = model.accessors[accessorIdx];
+                glDrawArrays(primitive.mode, 0, GLsizei(accessor.count));
+              }
+            }
+            glBindVertexArray(0);
+          }
+
+          for(size_t childIdx = 0; childIdx < node.children.size(); ++childIdx) {
+            drawNode(node.children[childIdx], modelMatrix);
+          }
         };
 
     // Draw the scene referenced by gltf file
     if (model.defaultScene >= 0) {
       // TODO Draw all nodes
-      for(size_t nodeIdx = 0; nodeIdx < model.scenes[model.defaultScene].nodes.size(); ++nodeIdx) {
+      for(const auto nodeIdx : model.scenes[model.defaultScene].nodes) {
         drawNode(nodeIdx, glm::mat4(1));
       }
     }
@@ -209,16 +249,16 @@ bool ViewerApplication::loadGltfFile(tinygltf::Model &model) {
   //bool ret = loader.LoadBinaryFromFile(&model, &err, &warn, m_gltfFilePath.string()); // for binary glTF(.glb)
 
   if (!warn.empty()) {
-    std::printf("Warn: %s\n", warn.c_str());
+    std::cerr << warn << std::endl;
   }
 
   if (!err.empty()) {
-    std::printf("Err: %s\n", err.c_str());
+    std::cerr << err << std::endl;
   }
 
   if (!ret) {
-    std::printf("Failed to parse glTF\n");
-    return -1;
+    std::cerr << "Failed to parse glTF file" << std::endl;
+    return false;
   }
 
   return ret;
@@ -228,7 +268,7 @@ std::vector<GLuint> ViewerApplication::createBufferObjects(const tinygltf::Model
   std::vector<tinygltf::Buffer> buffers(model.buffers);
 
   std::vector<GLuint> bufferObjects(buffers.size(), 0); // Assuming buffers is a std::vector of Buffer
-  glGenBuffers(bufferObjects.size(), bufferObjects.data()); // Ask opengl to reserve an identifier for our buffer object and store it in bufferObject.
+  glGenBuffers(GLsizei(bufferObjects.size()), bufferObjects.data()); // Ask opengl to reserve an identifier for our buffer object and store it in bufferObject.
   for (size_t i = 0; i < buffers.size(); ++i) {
     glBindBuffer(GL_ARRAY_BUFFER, bufferObjects[i]);
     glBufferStorage(GL_ARRAY_BUFFER, buffers[i].data.size(), // Assume a Buffer has a data member variable of type std::vector
@@ -248,17 +288,17 @@ std::vector<GLuint> ViewerApplication::createVertexArrayObjects(
 
   for (size_t meshIdx = 0; meshIdx < model.meshes.size(); ++meshIdx) {
     const auto vaoOffset = vertexArrayObjects.size();
-    tinygltf::Mesh mesh = model.meshes[meshIdx];
+    const auto &mesh = model.meshes[meshIdx];
 
     vertexArrayObjects.resize(vaoOffset + mesh.primitives.size());
-    meshIndexToVaoRange.push_back(VaoRange{(GLsizei)vaoOffset, (GLsizei)mesh.primitives.size()});  // Will be used during rendering
+    meshIndexToVaoRange.push_back(VaoRange{GLsizei(vaoOffset), GLsizei(mesh.primitives.size())});  // Will be used during rendering
 
-    glGenVertexArrays(mesh.primitives.size(), &vertexArrayObjects[vaoOffset]);
+    glGenVertexArrays(GLsizei(mesh.primitives.size()), &vertexArrayObjects[vaoOffset]);
 
     for(size_t primitiveIdx = 0; primitiveIdx < mesh.primitives.size(); ++primitiveIdx) {
       glBindVertexArray(vertexArrayObjects[vaoOffset + primitiveIdx]);
 
-      tinygltf::Primitive primitive = mesh.primitives[primitiveIdx];
+      const auto &primitive = mesh.primitives[primitiveIdx];
 
       for(size_t attrIdx = 0; attrIdx < ATTRIBUTES.size(); ++attrIdx) {
         const auto iterator = primitive.attributes.find(ATTRIBUTES[attrIdx]);
@@ -272,7 +312,7 @@ std::vector<GLuint> ViewerApplication::createVertexArrayObjects(
           const auto bufferObject = bufferObjects[bufferIdx];
 
           // TODO Enable the vertex attrib array corresponding to POSITION with glEnableVertexAttribArray (you need to use VERTEX_ATTRIB_POSITION_IDX which is defined at the top of the file)
-          glEnableVertexAttribArray(VERTEX_ATTRIB_POSITION_IDX);
+          glEnableVertexAttribArray(attrIdx);
           // TODO Bind the buffer object to GL_ARRAY_BUFFER
           glBindBuffer(GL_ARRAY_BUFFER, bufferObject);
 
@@ -280,7 +320,7 @@ std::vector<GLuint> ViewerApplication::createVertexArrayObjects(
 
           // TODO Call glVertexAttribPointer with the correct arguments. 
           glVertexAttribPointer(
-            VERTEX_ATTRIB_POSITION_IDX,
+            attrIdx,
             accessor.type,
             accessor.componentType,
             GL_FALSE,
