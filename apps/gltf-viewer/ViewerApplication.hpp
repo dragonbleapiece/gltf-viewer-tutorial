@@ -5,6 +5,8 @@
 #include "utils/filesystem.hpp"
 #include "utils/shaders.hpp"
 
+#include <tiny_gltf.h>
+
 class ViewerApplication
 {
 public:
@@ -34,6 +36,7 @@ private:
   std::string m_vertexShader = "forward.vs.glsl";
   std::string m_fragmentShader = "normals.fs.glsl";
 
+
   bool m_hasUserCamera = false;
   Camera m_userCamera;
 
@@ -56,4 +59,7 @@ private:
     the creation of a GLFW windows and thus a GL context which must exists
     before most of OpenGL function calls.
   */
+
+  // load the GLtf file from the model
+  bool loadGltfFile(tinygltf::Model &model);
 };

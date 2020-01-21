@@ -56,6 +56,7 @@ int ViewerApplication::run()
 
   tinygltf::Model model;
   // TODO Loading the glTF file
+  loadGltfFile(model);
 
   // TODO Creation of Buffer Objects
 
@@ -181,4 +182,28 @@ ViewerApplication::ViewerApplication(const fs::path &appPath, uint32_t width,
   glfwSetKeyCallback(m_GLFWHandle.window(), keyCallback);
 
   printGLVersion();
+}
+
+bool ViewerApplication::loadGltfFile(tinygltf::Model &model) {
+  tinygltf::TinyGLTF loader;
+  std::string err;
+  std::string warn;
+
+  bool ret = loader.LoadASCIIFromFile(&model, &err, &warn, m_gltfFilePath.string());
+  //bool ret = loader.LoadBinaryFromFile(&model, &err, &warn, m_gltfFilePath.string()); // for binary glTF(.glb)
+
+  if (!warn.empty()) {
+    std::printf("Warn: %s\n", warn.c_str());
+  }
+
+  if (!err.empty()) {
+    std::printf("Err: %s\n", err.c_str());
+  }
+
+  if (!ret) {
+    std::printf("Failed to parse glTF\n");
+    return -1;
+  }
+
+  return ret;
 }
