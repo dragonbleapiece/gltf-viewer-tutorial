@@ -96,6 +96,9 @@ int ViewerApplication::run()
     // Draw the scene referenced by gltf file
     if (model.defaultScene >= 0) {
       // TODO Draw all nodes
+      for(size_t nodeIdx = 0; nodeIdx < model.scenes[model.defaultScene].nodes.size(); ++nodeIdx) {
+        drawNode(nodeIdx, glm::mat4(1));
+      }
     }
   };
 
@@ -276,7 +279,14 @@ std::vector<GLuint> ViewerApplication::createVertexArrayObjects(
           const auto byteOffset = bufferView.byteOffset + accessor.byteOffset;
 
           // TODO Call glVertexAttribPointer with the correct arguments. 
-          glVertexAttribPointer(VERTEX_ATTRIB_POSITION_IDX, accessor.type, accessor.componentType, GL_FALSE, bufferView.byteStride, (const GLvoid*)byteOffset);
+          glVertexAttribPointer(
+            VERTEX_ATTRIB_POSITION_IDX,
+            accessor.type,
+            accessor.componentType,
+            GL_FALSE,
+            bufferView.byteStride,
+            (const GLvoid*)byteOffset
+          );
           // Remember size is obtained with accessor.type, type is obtained with accessor.componentType. 
           // The stride is obtained in the bufferView, normalized is always GL_FALSE, and pointer is the byteOffset (don't forget the cast).
         }
