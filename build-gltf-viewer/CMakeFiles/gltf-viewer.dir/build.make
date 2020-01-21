@@ -147,9 +147,22 @@ CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/gltf.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/gltf.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/apps/gltf-viewer/utils/gltf.cpp -o CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/gltf.cpp.s
 
+CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/images.cpp.o: CMakeFiles/gltf-viewer.dir/flags.make
+CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/images.cpp.o: ../apps/gltf-viewer/utils/images.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/build-gltf-viewer/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/images.cpp.o"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/images.cpp.o -c /home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/apps/gltf-viewer/utils/images.cpp
+
+CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/images.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/images.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/apps/gltf-viewer/utils/images.cpp > CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/images.cpp.i
+
+CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/images.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/images.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/apps/gltf-viewer/utils/images.cpp -o CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/images.cpp.s
+
 CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui.cpp.o: CMakeFiles/gltf-viewer.dir/flags.make
 CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui.cpp.o: ../third-party/imgui-1.74/imgui.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/build-gltf-viewer/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/build-gltf-viewer/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui.cpp.o"
 	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui.cpp.o -c /home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/third-party/imgui-1.74/imgui.cpp
 
 CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui.cpp.i: cmake_force
@@ -162,7 +175,7 @@ CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui.cpp.s: cmake_force
 
 CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_demo.cpp.o: CMakeFiles/gltf-viewer.dir/flags.make
 CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_demo.cpp.o: ../third-party/imgui-1.74/imgui_demo.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/build-gltf-viewer/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_demo.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/build-gltf-viewer/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building CXX object CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_demo.cpp.o"
 	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_demo.cpp.o -c /home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/third-party/imgui-1.74/imgui_demo.cpp
 
 CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_demo.cpp.i: cmake_force
@@ -175,7 +188,7 @@ CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_demo.cpp.s: cmake_force
 
 CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_draw.cpp.o: CMakeFiles/gltf-viewer.dir/flags.make
 CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_draw.cpp.o: ../third-party/imgui-1.74/imgui_draw.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/build-gltf-viewer/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building CXX object CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_draw.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/build-gltf-viewer/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building CXX object CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_draw.cpp.o"
 	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_draw.cpp.o -c /home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/third-party/imgui-1.74/imgui_draw.cpp
 
 CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_draw.cpp.i: cmake_force
@@ -188,7 +201,7 @@ CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_draw.cpp.s: cmake_force
 
 CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_widgets.cpp.o: CMakeFiles/gltf-viewer.dir/flags.make
 CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_widgets.cpp.o: ../third-party/imgui-1.74/imgui_widgets.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/build-gltf-viewer/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building CXX object CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_widgets.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/build-gltf-viewer/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building CXX object CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_widgets.cpp.o"
 	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_widgets.cpp.o -c /home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/third-party/imgui-1.74/imgui_widgets.cpp
 
 CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_widgets.cpp.i: cmake_force
@@ -201,7 +214,7 @@ CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_widgets.cpp.s: cmake_for
 
 CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/examples/imgui_impl_opengl3.cpp.o: CMakeFiles/gltf-viewer.dir/flags.make
 CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/examples/imgui_impl_opengl3.cpp.o: ../third-party/imgui-1.74/examples/imgui_impl_opengl3.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/build-gltf-viewer/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building CXX object CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/examples/imgui_impl_opengl3.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/build-gltf-viewer/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Building CXX object CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/examples/imgui_impl_opengl3.cpp.o"
 	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/examples/imgui_impl_opengl3.cpp.o -c /home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/third-party/imgui-1.74/examples/imgui_impl_opengl3.cpp
 
 CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/examples/imgui_impl_opengl3.cpp.i: cmake_force
@@ -214,7 +227,7 @@ CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/examples/imgui_impl_opengl3.cp
 
 CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/examples/imgui_impl_glfw.cpp.o: CMakeFiles/gltf-viewer.dir/flags.make
 CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/examples/imgui_impl_glfw.cpp.o: ../third-party/imgui-1.74/examples/imgui_impl_glfw.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/build-gltf-viewer/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Building CXX object CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/examples/imgui_impl_glfw.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/build-gltf-viewer/CMakeFiles --progress-num=$(CMAKE_PROGRESS_16) "Building CXX object CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/examples/imgui_impl_glfw.cpp.o"
 	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/examples/imgui_impl_glfw.cpp.o -c /home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/third-party/imgui-1.74/examples/imgui_impl_glfw.cpp
 
 CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/examples/imgui_impl_glfw.cpp.i: cmake_force
@@ -227,7 +240,7 @@ CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/examples/imgui_impl_glfw.cpp.s
 
 CMakeFiles/gltf-viewer.dir/third-party/glad/src/glad.c.o: CMakeFiles/gltf-viewer.dir/flags.make
 CMakeFiles/gltf-viewer.dir/third-party/glad/src/glad.c.o: ../third-party/glad/src/glad.c
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/build-gltf-viewer/CMakeFiles --progress-num=$(CMAKE_PROGRESS_16) "Building C object CMakeFiles/gltf-viewer.dir/third-party/glad/src/glad.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/build-gltf-viewer/CMakeFiles --progress-num=$(CMAKE_PROGRESS_17) "Building C object CMakeFiles/gltf-viewer.dir/third-party/glad/src/glad.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/gltf-viewer.dir/third-party/glad/src/glad.c.o   -c /home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/third-party/glad/src/glad.c
 
 CMakeFiles/gltf-viewer.dir/third-party/glad/src/glad.c.i: cmake_force
@@ -246,6 +259,7 @@ gltf__viewer_OBJECTS = \
 "CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/cameras.cpp.o" \
 "CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/gl_debug_output.cpp.o" \
 "CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/gltf.cpp.o" \
+"CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/images.cpp.o" \
 "CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui.cpp.o" \
 "CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_demo.cpp.o" \
 "CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_draw.cpp.o" \
@@ -263,6 +277,7 @@ bin/gltf-viewer: CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/tiny_gltf_impl.cpp.
 bin/gltf-viewer: CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/cameras.cpp.o
 bin/gltf-viewer: CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/gl_debug_output.cpp.o
 bin/gltf-viewer: CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/gltf.cpp.o
+bin/gltf-viewer: CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/images.cpp.o
 bin/gltf-viewer: CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui.cpp.o
 bin/gltf-viewer: CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_demo.cpp.o
 bin/gltf-viewer: CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/imgui_draw.cpp.o
@@ -278,7 +293,7 @@ bin/gltf-viewer: /usr/lib/x86_64-linux-gnu/librt.so
 bin/gltf-viewer: /usr/lib/x86_64-linux-gnu/libm.so
 bin/gltf-viewer: /usr/lib/x86_64-linux-gnu/libX11.so
 bin/gltf-viewer: CMakeFiles/gltf-viewer.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/build-gltf-viewer/CMakeFiles --progress-num=$(CMAKE_PROGRESS_17) "Linking CXX executable bin/gltf-viewer"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/nicolas/Documents/IMAC/A3/OpenGL/gltf-viewer-tutorial/build-gltf-viewer/CMakeFiles --progress-num=$(CMAKE_PROGRESS_18) "Linking CXX executable bin/gltf-viewer"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/gltf-viewer.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

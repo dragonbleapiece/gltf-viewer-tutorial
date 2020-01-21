@@ -241,6 +241,7 @@ CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/ViewerApplication.cpp.o: ../apps/glt
 CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/ViewerApplication.cpp.o: ../apps/gltf-viewer/utils/gl_debug_output.hpp
 CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/ViewerApplication.cpp.o: ../apps/gltf-viewer/utils/glfw.hpp
 CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/ViewerApplication.cpp.o: ../apps/gltf-viewer/utils/gltf.hpp
+CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/ViewerApplication.cpp.o: ../apps/gltf-viewer/utils/images.hpp
 CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/ViewerApplication.cpp.o: ../apps/gltf-viewer/utils/shaders.hpp
 
 CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/main.cpp.o: ../third-party/args-6.2.2/args.hxx
@@ -811,6 +812,11 @@ CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/gltf.cpp.o: ../third-party/tin
 CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/gltf.cpp.o: ../third-party/tinygltf-bcf2ce586ee8bf2a2a816afa6bfe2f8692ba6ac2/include/tiny_gltf.h
 CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/gltf.cpp.o: ../apps/gltf-viewer/utils/gltf.cpp
 CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/gltf.cpp.o: ../apps/gltf-viewer/utils/gltf.hpp
+
+CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/images.cpp.o: ../third-party/glad/include/KHR/khrplatform.h
+CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/images.cpp.o: ../third-party/glad/include/glad/glad.h
+CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/images.cpp.o: ../apps/gltf-viewer/utils/images.cpp
+CMakeFiles/gltf-viewer.dir/apps/gltf-viewer/utils/images.cpp.o: ../apps/gltf-viewer/utils/images.hpp
 
 CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/examples/imgui_impl_glfw.cpp.o: ../third-party/glfw-3.3.1/include/GLFW/glfw3.h
 CMakeFiles/gltf-viewer.dir/third-party/imgui-1.74/examples/imgui_impl_glfw.cpp.o: ../third-party/glfw-3.3.1/include/GLFW/glfw3native.h
