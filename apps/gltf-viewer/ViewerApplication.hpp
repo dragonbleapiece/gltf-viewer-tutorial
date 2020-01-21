@@ -62,4 +62,14 @@ private:
 
   // load the GLtf file from the model
   bool loadGltfFile(tinygltf::Model &model);
+
+  // create the buffer Objects for OpenGL from the model
+  std::vector<GLuint> createBufferObjects(const tinygltf::Model &model);
+
+  // create the VAO for OpenGL from the model
+  std::vector<GLuint> createVertexArrayObjects(
+    const tinygltf::Model &model,
+    const std::vector<GLuint> &bufferObjects,
+    std::vector<VaoRange> &meshIndexToVaoRange
+  );
 };
