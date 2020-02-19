@@ -4,3 +4,4 @@
 .idea/
 cmake-build-debug/
 build-gltf-viewer/
+glTF-Sample-Models/
