@@ -13,6 +13,7 @@
 #include <stb_image_write.h>
 #include <tiny_gltf.h>
 #include "utils/gltf.hpp"
+#include "utils/images.hpp"
 
 // Each vertex attribute is identified by an index
 // What vertex attribute we use, and what are their index is defined by the vertex shader
@@ -49,6 +50,25 @@ int ViewerApplication::run()
       glm::perspective(70.f, float(m_nWindowWidth) / m_nWindowHeight,
           0.001f * maxDistance, 1.5f * maxDistance);
 
+  tinygltf::Model model;
+  // TODO Loading the glTF file
+  if(!loadGltfFile(model)) {
+    return -1;
+  }
+
+  // Bounding Box of the scene
+  glm::vec3 bboxMin;
+  glm::vec3 bboxMax;
+
+  computeSceneBounds(
+    model,
+    bboxMin,
+    bboxMax
+  );
+
+  glm::vec3 bboxDiagonal = (bboxMax - bboxMin);
+  glm::vec3 bboxCenter = bboxDiagonal / 2f;
+
   // TODO Implement a new CameraController model and use it instead. Propose the
   // choice from the GUI
   FirstPersonCameraController cameraController{
@@ -58,14 +78,9 @@ int ViewerApplication::run()
   } else {
     // TODO Use scene bounds to compute a better default camera
     cameraController.setCamera(
-        Camera{glm::vec3(0, 0, 0), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0)});
+        Camera{bboxCenter + bboxDiagonal, bboxCenter, glm::vec3(0, 1, 0)});
   }
 
-  tinygltf::Model model;
-  // TODO Loading the glTF file
-  if(!loadGltfFile(model)) {
-    return -1;
-  }
 
   // TODO Creation of Buffer Objects
   std::vector<GLuint> bufferObjects = createBufferObjects(model);
@@ -141,6 +156,26 @@ int ViewerApplication::run()
       }
     }
   };
+
+  if(!m_OutputPath.empty()) {
+    const int numComponents = 3;
+    std::vector<unsigned char> pixels(m_nWindowWidth * m_nWindowHeight * numComponents);
+    renderToImage(m_nWindowWidth, m_nWindowHeight, numComponents, pixels.data(), [&]() {
+      drawScene(cameraController.getCamera());
+    });
+    flipImageYAxis(m_nWindowWidth, m_nWindowHeight, numComponents, pixels.data());
+    const auto strPath = m_OutputPath.string();
+    stbi_write_png(
+      strPath.c_str(),
+      m_nWindowWidth,
+      m_nWindowHeight,
+      numComponents,
+      pixels.data(),
+      0
+    );
+
+    return 0;
+  }
 
   // Loop until the user closes the window
   for (auto iterationCount = 0u; !m_GLFWHandle.shouldClose();
