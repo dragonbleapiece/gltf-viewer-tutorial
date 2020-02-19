@@ -107,4 +107,53 @@ bool FirstPersonCameraController::update(float elapsedTime)
   return true;
 }
 
-bool TrackballCameraController::update(float elapsedTime) { return false; }
+/*bool TrackballCameraController::update(float elapsedTime) { 
+  
+  if (glfwGetMouseButton(m_pWindow, GLFW_MOUSE_BUTTON_MIDDLE) &&
+      !m_MiddleButtonPressed) {
+    m_MiddleButtonPressed = true;
+    glfwGetCursorPos(
+        m_pWindow, &m_LastCursorPosition.x, &m_LastCursorPosition.y);
+  } else if (!glfwGetMouseButton(m_pWindow, GLFW_MOUSE_BUTTON_MIDDLE) &&
+             m_MiddleButtonPressed) {
+    m_MiddleButtonPressed = false;
+  }
+
+  const auto cursorDelta = ([&]() {
+    if (m_MiddleButtonPressed) {
+      dvec2 cursorPosition;
+      glfwGetCursorPos(m_pWindow, &cursorPosition.x, &cursorPosition.y);
+      const auto delta = cursorPosition - m_LastCursorPosition;
+      m_LastCursorPosition = cursorPosition;
+      return delta;
+    }
+    return dvec2(0);
+  })();
+
+  float pedestalUp = 0.f;
+  float dollyIn = 0.f;
+
+  // Pedestal up
+  if (glfwGetKey(m_pWindow, GLFW_KEY_SHIFT)) {
+    pedestalUp += m_fSpeed * elapsedTime;
+  }
+
+  // Dolly out
+  if (glfwGetKey(m_pWindow, GLFW_KEY_CTRL)) {
+    dollyIn -= m_fSpeed * elapsedTime;
+  }
+
+
+  // cursor going right, so minus because we want pan left angle:
+  const float panLeftAngle = -0.01f * float(cursorDelta.x);
+  const float tiltDownAngle = 0.01f * float(cursorDelta.y);
+
+  const auto hasMoved = pedestalUp || dollyIn;
+  if (!hasMoved) {
+    return false;
+  }
+
+  m_camera.moveLocal(0, pedestalUp, dollyIn);
+  m_camera.rotateWorld(panLeftAngle, m_up);
+  return false;
+}*/

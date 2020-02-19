@@ -3,3 +3,4 @@
 # JetBrain's Clion caches and temps files
 .idea/
 cmake-build-debug/
+build-gltf-viewer/

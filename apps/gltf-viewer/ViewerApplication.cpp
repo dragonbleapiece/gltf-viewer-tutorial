@@ -43,13 +43,6 @@ int ViewerApplication::run()
   const auto normalMatrixLocation =
       glGetUniformLocation(glslProgram.glId(), "uNormalMatrix");
 
-  // Build projection matrix
-  auto maxDistance = 500.f; // TODO use scene bounds instead to compute this
-  maxDistance = maxDistance > 0.f ? maxDistance : 100.f;
-  const auto projMatrix =
-      glm::perspective(70.f, float(m_nWindowWidth) / m_nWindowHeight,
-          0.001f * maxDistance, 1.5f * maxDistance);
-
   tinygltf::Model model;
   // TODO Loading the glTF file
   if(!loadGltfFile(model)) {
@@ -66,8 +59,20 @@ int ViewerApplication::run()
     bboxMax
   );
 
+  glm::vec3 bboxCenter = (bboxMin + bboxMax) / 2.f;
   glm::vec3 bboxDiagonal = (bboxMax - bboxMin);
-  glm::vec3 bboxCenter = bboxDiagonal / 2f;
+
+  float epsilon = 0.001f;
+  // check if the scene is flat
+  glm::vec3 up = glm::vec3(0, 1, 0);
+  glm::vec3 eye = (bboxDiagonal.z < epsilon) ? bboxCenter + 2.f * glm::cross(bboxDiagonal, up) : bboxCenter + bboxDiagonal;
+
+   // Build projection matrix
+  auto maxDistance = glm::length(bboxDiagonal) > epsilon ? glm::length(bboxDiagonal) : 100.f;
+  const auto projMatrix =
+      glm::perspective(70.f, float(m_nWindowWidth) / m_nWindowHeight,
+          0.001f * maxDistance, 1.5f * maxDistance);
+
 
   // TODO Implement a new CameraController model and use it instead. Propose the
   // choice from the GUI
@@ -78,7 +83,7 @@ int ViewerApplication::run()
   } else {
     // TODO Use scene bounds to compute a better default camera
     cameraController.setCamera(
-        Camera{bboxCenter + bboxDiagonal, bboxCenter, glm::vec3(0, 1, 0)});
+        Camera{eye, bboxCenter, up});
   }
 
 
