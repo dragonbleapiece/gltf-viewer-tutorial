@@ -34,7 +34,7 @@ private:
 
   fs::path m_gltfFilePath;
   std::string m_vertexShader = "forward.vs.glsl";
-  std::string m_fragmentShader = "diffuse_directional_light.fs.glsl";//"normals.fs.glsl";
+  std::string m_fragmentShader = "pbr_directional_light.fs.glsl";//"diffuse_directional_light.fs.glsl";//"normals.fs.glsl";
 
 
   bool m_hasUserCamera = false;
@@ -72,4 +72,7 @@ private:
     const std::vector<GLuint> &bufferObjects,
     std::vector<VaoRange> &meshIndexToVaoRange
   );
+
+  // create the Texture Objects from the model
+  std::vector<GLuint> createTextureObjects(const tinygltf::Model &model) const;
 };
