@@ -6,6 +6,8 @@
 // Good reference here to map camera movements to lookAt calls
 // http://learnwebgl.brown37.net/07_cameras/camera_movement.html
 
+// Florian Torres Code
+
 using namespace glm;
 
 struct ViewFrame

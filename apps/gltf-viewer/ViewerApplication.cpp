@@ -67,6 +67,12 @@ int ViewerApplication::run()
       glGetUniformLocation(glslProgram.glId(), "uRoughnessFactor");
   const auto metallicRoughnessTextureLocation =
       glGetUniformLocation(glslProgram.glId(), "uMetallicRoughnessTexture");
+  const auto emissiveTextureLocation =
+      glGetUniformLocation(glslProgram.glId(), "uEmissiveTexture");
+  const auto emissiveFactorLocation =
+      glGetUniformLocation(glslProgram.glId(), "uEmissiveFactor");
+
+
 
   // LOADS MODEL
 
@@ -100,6 +106,8 @@ int ViewerApplication::run()
       glm::perspective(70.f, float(m_nWindowWidth) / m_nWindowHeight,
           0.001f * maxDistance, 1.5f * maxDistance);
 
+
+  const float cameraSpeed = 1.f;
 
   // TODO Implement a new CameraController model and use it instead. Propose the
   // choice from the GUI
@@ -160,6 +168,7 @@ int ViewerApplication::run()
       // only valid if materialIndex >= 0
       const auto &material = model.materials[materialIndex];
       const auto &pbrMetallicRoughness = material.pbrMetallicRoughness;
+      const auto &emissiveTexture = material.emissiveTexture;
       
       // Base Color
       if(pbrMetallicRoughness.baseColorTexture.index >= 0) {
@@ -180,6 +189,8 @@ int ViewerApplication::run()
             (float)pbrMetallicRoughness.baseColorFactor[3]
         );
       }
+
+      // Roughness Texture
       if(pbrMetallicRoughness.metallicRoughnessTexture.index >= 0) {
         const auto &texture = textureObjects[pbrMetallicRoughness.metallicRoughnessTexture.index];
 
@@ -188,6 +199,20 @@ int ViewerApplication::run()
         glUniform1i(metallicRoughnessTextureLocation, 1);
         glUniform1f(metallicFactorLocation, pbrMetallicRoughness.metallicFactor);
         glUniform1f(roughnessFactorLocation, pbrMetallicRoughness.roughnessFactor);
+      }
+
+      // EmissiveTexture
+      if (emissiveTexture.index >= 0) {
+        const auto &texture = textureObjects[emissiveTexture.index];
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glUniform1i(emissiveTextureLocation, 2);
+        glUniform3f(
+          emissiveFactorLocation, 
+          (float) material.emissiveFactor[0],
+          (float) material.emissiveFactor[1],
+          (float) material.emissiveFactor[2]
+        );
       }
 
     } else {
@@ -340,12 +365,12 @@ int ViewerApplication::run()
         // Radio buttons to switch camera type
         static int cameraControllerType = 0;
         if (ImGui::RadioButton("Trackball", &cameraControllerType, 0)) {
-          cameraController = std::make_unique<TrackballCameraController>(m_GLFWHandle.window(), 0.01f);
+          cameraController = std::make_unique<TrackballCameraController>(m_GLFWHandle.window(), cameraSpeed);
           cameraController->setCamera(camera);
         }
         ImGui::SameLine();
         if (ImGui::RadioButton("FirstPerson", &cameraControllerType, 1)) {
-          cameraController = std::make_unique<FirstPersonCameraController>(m_GLFWHandle.window(), 5.f * maxDistance);
+          cameraController = std::make_unique<FirstPersonCameraController>(m_GLFWHandle.window(), cameraSpeed * maxDistance);
           cameraController->setCamera(camera);
         }
 
