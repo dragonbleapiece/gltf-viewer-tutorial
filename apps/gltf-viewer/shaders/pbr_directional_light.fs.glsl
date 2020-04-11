@@ -3,6 +3,7 @@
 in vec3 vViewSpaceNormal;
 in vec3 vViewSpacePosition;
 in vec2 vTexCoords;
+in vec4 vFragPosLightSpace;
 
 uniform vec3 uLightDirection;
 uniform vec3 uLightIntensity;
@@ -16,6 +17,7 @@ uniform float uRoughnessFactor;
 uniform sampler2D uBaseColorTexture;
 uniform sampler2D uMetallicRoughnessTexture;
 uniform sampler2D uEmissiveTexture;
+uniform sampler2D uShadowMap;
 
 out vec3 fColor;
 
@@ -43,6 +45,18 @@ vec3 LINEARtoSRGB(vec3 color)
 vec4 SRGBtoLINEAR(vec4 srgbIn)
 {
   return vec4(pow(srgbIn.xyz, vec3(GAMMA)), srgbIn.w);
+}
+
+float ShadowCalculation(vec4 fragPosLightSpace) {
+  // perform perspective divide
+  vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+  // convert from [-1, 1] to [0, 1]
+  projCoords = projCoords * 0.5 + 0.5;
+  float closestDepth = texture(uShadowMap, projCoords.xy).r;
+  float currentDepth = projCoords.z;
+  float shadow = currentDepth > closestDepth ? 1.0 : 0.0;
+
+  return shadow;
 }
 
 void main()
@@ -92,5 +106,10 @@ void main()
   vec3 f_diffuse = (1 - F) * diffuse;
   vec3 f_specular = F * Vis * D;
 
-  fColor = LINEARtoSRGB((f_diffuse + f_specular) * uLightIntensity * NdotL + emissive);
+  // With shadow map
+
+  float shadow = ShadowCalculation(vFragPosLightSpace);
+
+  //fColor = LINEARtoSRGB((f_diffuse + f_specular) * uLightIntensity * NdotL + emissive);
+  fColor = vec3((1.0 - shadow));
 }

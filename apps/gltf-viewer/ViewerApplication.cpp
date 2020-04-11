@@ -21,6 +21,13 @@
 // position, normal and texcoord is pretty standard for 3D applications
 const std::vector<std::string> ATTRIBUTES = {"POSITION", "NORMAL", "TEXCOORD_0"};
 
+
+// FOR SHADOW MAP
+const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+
+const std::string DEPTH_VS_FILENAME = "simple_depth.vs.glsl";
+const std::string DEPTH_FS_FILENAME = "empty.fs.glsl";
+
 void keyCallback(
     GLFWwindow *window, int key, int scancode, int action, int mods)
 {
@@ -35,6 +42,26 @@ int ViewerApplication::run()
   const auto glslProgram =
       compileProgram({m_ShadersRootPath / m_AppName / m_vertexShader,
           m_ShadersRootPath / m_AppName / m_fragmentShader});
+
+  // Loader shaders for depth
+  const auto depthProgram = 
+      compileProgram({m_ShadersRootPath / m_AppName / DEPTH_VS_FILENAME,
+          m_ShadersRootPath / m_AppName / DEPTH_FS_FILENAME});
+
+  // DEPTH PROGRAM
+  const auto depth_lightSpaceMatrixLocation =
+      glGetUniformLocation(depthProgram.glId(), "uLightSpaceMatrix");
+  const auto depth_modelMatrixLocation =
+      glGetUniformLocation(depthProgram.glId(), "uModelMatrix");
+
+  // ORIGINAL PROGRAM
+  const auto lightSpaceMatrixLocation =
+      glGetUniformLocation(glslProgram.glId(), "uLightSpaceMatrix");
+  const auto modelMatrixLocation =
+      glGetUniformLocation(glslProgram.glId(), "uModelMatrix");
+
+
+  // MATRICES
 
   const auto modelViewProjMatrixLocation =
       glGetUniformLocation(glslProgram.glId(), "uModelViewProjMatrix");
@@ -59,7 +86,7 @@ int ViewerApplication::run()
   const auto baseColorFactorLocation =
       glGetUniformLocation(glslProgram.glId(), "uBaseColorFactor");
 
-  // Materials
+  // MATERIALS
 
   const auto metallicFactorLocation =
       glGetUniformLocation(glslProgram.glId(), "uMetallicFactor");
@@ -72,7 +99,9 @@ int ViewerApplication::run()
   const auto emissiveFactorLocation =
       glGetUniformLocation(glslProgram.glId(), "uEmissiveFactor");
 
-
+  // SHADOW MAP
+  const auto shadowMapLocation =
+      glGetUniformLocation(glslProgram.glId(), "uShadowMap");
 
   // LOADS MODEL
 
@@ -102,9 +131,11 @@ int ViewerApplication::run()
 
    // Build projection matrix
   auto maxDistance = glm::length(bboxDiagonal) > epsilon ? glm::length(bboxDiagonal) : 100.f;
+  float near_plane = 0.001f * maxDistance;
+  float far_plane = 1.5f * maxDistance;
   const auto projMatrix =
       glm::perspective(70.f, float(m_nWindowWidth) / m_nWindowHeight,
-          0.001f * maxDistance, 1.5f * maxDistance);
+          near_plane, far_plane);
 
 
   const float cameraSpeed = 1.f;
@@ -141,6 +172,30 @@ int ViewerApplication::run()
 
   glBindTexture(GL_TEXTURE_2D, 0);
 
+
+  // Generate Depth Map
+  unsigned int depthMapFBO;
+  glGenFramebuffers(1, &depthMapFBO);
+
+  // Create 2D texture for depth buffer
+  unsigned int depthMap;
+  glGenTextures(1, &depthMap);
+  glBindTexture(GL_TEXTURE_2D, depthMap);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+  // Attach the depth texture to depth framebuffer
+  glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+  glDrawBuffer(GL_NONE);
+  glReadBuffer(GL_NONE);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  glBindTexture(GL_TEXTURE_2D, 0);
+
   // Creation of Texture Objects
   const std::vector<GLuint> textureObjects = createTextureObjects(model);
 
@@ -154,11 +209,13 @@ int ViewerApplication::run()
 
   // Setup OpenGL state for rendering
   glEnable(GL_DEPTH_TEST);
-  glslProgram.use();
+  //glslProgram.use();
 
   // Light Variables
   glm::vec3 lightDirection(1., 1., 1.);
   glm::vec3 lightIntensity(1., 1., 1.);
+  glm::mat4 lightView = glm::lookAt(bboxCenter, -lightDirection * maxDistance * 0.5f, up);
+  glm::mat4 lightProjection = glm::ortho(-maxDistance / 2.f, maxDistance / 2.f, -maxDistance / 2.f, maxDistance / 2.f, 1.0f, 7.5f);
 
   // Lambda function to bind material
   const auto bindMaterial = [&](const auto materialIndex) {
@@ -224,8 +281,91 @@ int ViewerApplication::run()
       glUniform4f(baseColorFactorLocation, 1., 1., 1., 1.);
     }
 
+    // SHADOW MAP
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, depthMap);
+    glUniform1i(shadowMapLocation, 3);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
   };
 
+  // Lambda function to draw depth map
+  const auto drawDepth = [&](const Camera &camera) {
+
+    //float near_plane = 1.0f, far_plane = 7.5f;
+
+    glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+
+    // depth program to be used
+    glUniformMatrix4fv(depth_lightSpaceMatrixLocation, 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
+    
+    glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, whiteTexture);
+
+
+    // TODO refactoring
+
+    /// START OF REFACTO
+
+    // The recursive function that should draw a node
+    // We use a std::function because a simple lambda cannot be recursive
+    const std::function<void(int, const glm::mat4 &)> drawNode =
+        [&](int nodeIdx, const glm::mat4 &parentMatrix) {
+          // TODO The drawNode function
+          const auto &node = model.nodes[nodeIdx];
+
+          glm::mat4 modelMatrix = getLocalToWorldMatrix(node, parentMatrix);
+
+          if(node.mesh >= 0) {
+            glUniformMatrix4fv(depth_modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(modelMatrix));
+
+            const auto &mesh = model.meshes[node.mesh];
+            const auto &vaoRange = meshIndexToVaoRange[node.mesh];
+
+            for(size_t primitiveIdx = 0; primitiveIdx < mesh.primitives.size(); ++primitiveIdx) {
+              const auto &primitive = mesh.primitives[primitiveIdx];
+              //bindMaterial(primitive.material);
+              
+              const GLuint vao = vertexArrayObjects[vaoRange.begin + primitiveIdx];
+
+              glBindVertexArray(vao);
+
+              if(primitive.indices >= 0) {
+                const auto &accessor = model.accessors[primitive.indices];
+                const auto &bufferView = model.bufferViews[accessor.bufferView];
+                const auto byteOffset = bufferView.byteOffset + accessor.byteOffset;
+
+                glDrawElements(primitive.mode, GLsizei(accessor.count), accessor.componentType,(const GLvoid*)byteOffset);
+              } else {
+                const auto accessorIdx = (*begin(primitive.attributes)).second;
+                const auto &accessor = model.accessors[accessorIdx];
+                glDrawArrays(primitive.mode, 0, GLsizei(accessor.count));
+              }
+            }
+            glBindVertexArray(0);
+          }
+
+          // Draw children
+          for (const auto childNodeIdx : node.children) {
+            drawNode(childNodeIdx, modelMatrix);
+          }
+        };
+
+    // Draw the scene referenced by gltf file
+    if (model.defaultScene >= 0) {
+      // TODO Draw all nodes
+      for(const auto nodeIdx : model.scenes[model.defaultScene].nodes) {
+        drawNode(nodeIdx, glm::mat4(1));
+      }
+    }
+    /// END OF REFACTO
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  };
 
   // Lambda function to draw the scene
   const auto drawScene = [&](const Camera &camera) {
@@ -234,15 +374,23 @@ int ViewerApplication::run()
 
     const auto viewMatrix = camera.getViewMatrix();
 
-    glm::vec3 ligthDirInViewSpace(glm::normalize(viewMatrix * glm::vec4(lightDirection, 0.))); 
+    // for calculating the light for depth map
+    glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+
+    glm::vec3 lightDirInViewSpace(glm::normalize(viewMatrix * glm::vec4(lightDirection, 0.))); 
 
     if(lightDirectionLocation >= 0 ) {
-      glUniform3fv(lightDirectionLocation, 1, glm::value_ptr(ligthDirInViewSpace));
+      glUniform3fv(lightDirectionLocation, 1, glm::value_ptr(lightDirInViewSpace));
     }
 
     if(lightIntensityLocation >= 0) {
       glUniform3fv(lightIntensityLocation, 1, glm::value_ptr(lightIntensity));
     }
+
+    if(lightSpaceMatrixLocation >= 0) {
+       glUniformMatrix4fv(lightSpaceMatrixLocation, 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
+    }
+
 
     // The recursive function that should draw a node
     // We use a std::function because a simple lambda cannot be recursive
@@ -261,6 +409,10 @@ int ViewerApplication::run()
             glUniformMatrix4fv(modelViewMatrixLocation, 1, GL_FALSE, glm::value_ptr(modelViewMatrix));
             glUniformMatrix4fv(modelViewProjMatrixLocation, 1, GL_FALSE, glm::value_ptr(modelViewProjMatrix));
             glUniformMatrix4fv(normalMatrixLocation, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+            
+            // for depth map
+            glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(modelMatrix));
+
 
             const auto &mesh = model.meshes[node.mesh];
             const auto &vaoRange = meshIndexToVaoRange[node.mesh];
@@ -308,6 +460,10 @@ int ViewerApplication::run()
     const int numComponents = 3;
     std::vector<unsigned char> pixels(m_nWindowWidth * m_nWindowHeight * numComponents);
     renderToImage(m_nWindowWidth, m_nWindowHeight, numComponents, pixels.data(), [&]() {
+      depthProgram.use();
+      drawDepth(cameraController->getCamera());
+
+      glslProgram.use();
       drawScene(cameraController->getCamera());
     });
     flipImageYAxis(m_nWindowWidth, m_nWindowHeight, numComponents, pixels.data());
@@ -330,6 +486,12 @@ int ViewerApplication::run()
     const auto seconds = glfwGetTime();
 
     const auto camera = cameraController->getCamera();
+
+    // get depth map
+    depthProgram.use();
+    drawDepth(camera);
+
+    glslProgram.use();
     drawScene(camera);
 
     // GUI code:
@@ -381,14 +543,16 @@ int ViewerApplication::run()
           ImGui::Checkbox("Light from camera", &lightFromCamera);
           if (lightFromCamera) {
             lightDirection = -camera.front();
+            lightView = glm::lookAt(camera.eye() + camera.front() * maxDistance * 0.5f, camera.eye(), camera.up());
           } else {
             if (ImGui::SliderFloat("Theta", &theta, 0.f, glm::pi<float>()) ||
-                ImGui::SliderFloat("Phi", &phi, 0, 2.f * glm::pi<float>())) {
+                ImGui::SliderFloat("Phi", &phi, 0.f, 2.f * glm::pi<float>())) {
               lightDirection = glm::vec3(
                 glm::sin(theta) * glm::cos(phi),
                 glm::cos(theta),
                 glm::sin(theta) * glm::sin(phi)
               );
+              lightView = glm::lookAt(bboxCenter, -lightDirection * maxDistance * 0.5f, up);
             }
           }
 
