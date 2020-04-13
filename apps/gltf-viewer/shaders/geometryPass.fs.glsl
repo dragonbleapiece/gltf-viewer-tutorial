@@ -24,8 +24,6 @@ layout(location = 3) out vec3 fDiffuse;
 layout(location = 4) out vec3 fEmissive;
 layout(location = 5) out vec3 fSpecular;
 
-out vec3 fColor;
-
 // Constants
 const float GAMMA = 2.2;
 const float INV_GAMMA = 1. / GAMMA;
@@ -74,7 +72,7 @@ void main()
   float roughness = texture(uMetallicRoughnessTexture, vTexCoords).g * uRoughnessFactor;
   vec3 emissive = SRGBtoLINEAR(texture(uEmissiveTexture, vTexCoords)).rgb * uEmissiveFactor;
 
-   fEmissive = emissive;
+  fEmissive = emissive;
 
 
   float alpha = roughness * roughness;
@@ -103,9 +101,7 @@ void main()
   vec3 diffuse = c_diff * M_1_PI;
 
   vec3 f_diffuse = (1 - F) * diffuse;
-  fDiffuse = fDiffuse;
+  fDiffuse = f_diffuse * uLightIntensity * NdotL;
   vec3 f_specular = F * Vis * D;
-  fSpecular = f_specular;
-
-  fColor = LINEARtoSRGB((f_diffuse + f_specular) * uLightIntensity * NdotL + emissive);
+  fSpecular = f_specular * uLightIntensity * NdotL;
 }

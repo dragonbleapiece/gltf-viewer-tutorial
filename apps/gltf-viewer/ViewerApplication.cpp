@@ -97,6 +97,8 @@ int ViewerApplication::run()
   const auto compProgram =
       compileProgram({m_ShadersRootPath / m_AppName / m_compileShader});
 
+  // MATRICES
+
   const auto modelViewProjMatrixLocation =
       glGetUniformLocation(glslProgram.glId(), "uModelViewProjMatrix");
   const auto modelViewMatrixLocation =
@@ -134,6 +136,30 @@ int ViewerApplication::run()
       glGetUniformLocation(glslProgram.glId(), "uEmissiveFactor");
 
 
+  // Compute Shader Uniforms
+  const auto cPositionLocation =
+      glGetUniformLocation(compProgram.glId(), "uPositionTexture");
+  const auto cNormalLocation =
+      glGetUniformLocation(compProgram.glId(), "uNormalTexture");
+  const auto cAmbientLocation =
+      glGetUniformLocation(compProgram.glId(), "uAmbientTexture");
+  const auto cDiffuseLocation =
+      glGetUniformLocation(compProgram.glId(), "uDiffuseTexture");
+  const auto cEmissiveLocation =
+      glGetUniformLocation(compProgram.glId(), "uEmissiveTexture");
+  const auto cSpecularLocation =
+      glGetUniformLocation(compProgram.glId(), "uSpecularTexture");
+
+  const auto cViewWidthLocation =
+      glGetUniformLocation(compProgram.glId(), "uViewWidth");
+  const auto cViewHeightLocation =
+      glGetUniformLocation(compProgram.glId(), "uViewHeight");
+
+  const GLint cTexturesLocation[6] = {cPositionLocation, cNormalLocation, cAmbientLocation, cDiffuseLocation, cEmissiveLocation, cSpecularLocation};
+
+  for(int i = 0; i < 6; ++i) {
+    std::cout << cTexturesLocation[i] << std::endl;
+  }
 
   // LOADS MODEL
 
@@ -373,26 +399,55 @@ int ViewerApplication::run()
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
   };
 
+  // For Compute shader result output
+
+  GLuint fboResult;
+  GLuint texResult;
+
+  glGenTextures(1, &texResult);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, texResult);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, m_nWindowWidth, m_nWindowHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+  glBindImageTexture(0, texResult, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+
+  glGenFramebuffers(1, &fboResult);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fboResult);
+  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texResult, 0);
+  assert(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
   const auto computeScene = [&]() {
-    //compProgram.use();
+    
+    if(renderMode < GBufferTextureCount) { // If only one texture is rendered
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, m_FBO);
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
-    /*for(GLuint i = 0; i < GBufferTextureCount; ++i) {
-      glActiveTexture(GL_TEXTURE0 + i);
-      glBindTexture(GL_TEXTURE_2D, m_GBufferTextures[i]);
-    }*/
+      glReadBuffer(GL_COLOR_ATTACHMENT0 + renderMode);
+      glBlitFramebuffer(0, 0, m_nWindowWidth, m_nWindowHeight, 0, 0, m_nWindowWidth, m_nWindowHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    } else { // Else, Mix of textures so call the compute shader
+      compProgram.use();
+      
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, fboResult);
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, m_FBO);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+      for(GLuint i = 0; i < GBufferTextureCount - 1; ++i) {
+        glActiveTexture(GL_TEXTURE0 + i);
+        glBindTexture(GL_TEXTURE_2D, m_GBufferTextures[i]);
+        glUniform1i(cTexturesLocation[i], i);
+      }
 
-    glReadBuffer(GL_COLOR_ATTACHMENT0 + renderMode);
+      glUniform1f(cViewWidthLocation, (float) m_nWindowWidth);
+      glUniform1f(cViewHeightLocation, (float) m_nWindowHeight);
 
-    //glDispatchCompute(m_nWindowWidth, m_nWindowHeight, 1);
-    //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-    glBlitFramebuffer(0, 0, m_nWindowWidth, m_nWindowHeight, 0, 0, m_nWindowWidth, m_nWindowHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+      glDispatchCompute(m_nWindowWidth, m_nWindowHeight, 1);
+      glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+      glBlitFramebuffer(0, 0, m_nWindowWidth, m_nWindowHeight, 0, 0, m_nWindowWidth, m_nWindowHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
-    /*glActiveTexture(GL_TEXTURE0);*/
-
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+      glActiveTexture(GL_TEXTURE0);
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    }
 
     printErrorCode();
   };
@@ -519,6 +574,10 @@ int ViewerApplication::run()
           ImGui::SameLine();
           if (ImGui::RadioButton("Specular", &renderType, 5)) {
             renderMode = GSpecular;
+          }
+          ImGui::SameLine();
+          if (ImGui::RadioButton("Mix", &renderType, 6)) {
+            renderMode = GBufferTextureCount;
           }
         }
       }
