@@ -18,6 +18,27 @@ public:
   int run();
 
 private:
+
+  // Texture objects
+  enum GBufferTextureType
+  {
+    GPosition = 0,
+    GNormal,
+    GAmbient,
+    GDiffuse,
+    GEmissive,
+    GSpecular,
+    GDepth, // On doit créer une texture de depth mais on écrit pas directement dedans dans le FS. OpenGL le fait pour nous (et l'utilise).
+    GBufferTextureCount
+  };
+
+  GLuint m_GBufferTextures[GBufferTextureCount];
+  const GLenum m_GBufferTextureFormat[GBufferTextureCount] = { GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_DEPTH_COMPONENT32F };
+  const GLenum m_GBufferPixelFormat[GBufferTextureCount] = { GL_RGB, GL_RGB, GL_RGB, GL_RGB, GL_RGB, GL_RGB, GL_DEPTH_COMPONENT };
+  const GLenum m_GBufferTextureAttachment[GBufferTextureCount] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT5, GL_DEPTH_ATTACHMENT };
+
+  GLuint m_FBO;
+
   // A range of indices in a vector containing Vertex Array Objects
   struct VaoRange
   {
@@ -33,8 +54,9 @@ private:
   const fs::path m_ShadersRootPath;
 
   fs::path m_gltfFilePath;
-  std::string m_vertexShader = "forward.vs.glsl";
-  std::string m_fragmentShader = "pbr_directional_light.fs.glsl";//"diffuse_directional_light.fs.glsl";//"normals.fs.glsl";
+  std::string m_vertexShader = "geometryPass.vs.glsl";
+  std::string m_fragmentShader = "geometryPass.fs.glsl";//"diffuse_directional_light.fs.glsl";//"normals.fs.glsl";
+  std::string m_compileShader = "defered.cs.glsl";
 
 
   bool m_hasUserCamera = false;

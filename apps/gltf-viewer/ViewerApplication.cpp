@@ -29,12 +29,73 @@ void keyCallback(
   }
 }
 
+void printErrorCode() {
+  GLenum error;
+  bool hasError = false;
+  while((error = glGetError()) != GL_NO_ERROR) {
+    std::cout << "error code : " << error << std::endl; 
+    hasError = true;
+  }
+
+  assert(!hasError);
+}
+
+
+// https://zestedesavoir.com/tutoriels/1554/introduction-aux-compute-shaders/
+// check capabilities of GPU
+void printWorkGroupsCapabilities() {
+  int workgroup_count[3];
+  int workgroup_size[3];
+  int workgroup_invocations;
+
+  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &workgroup_count[0]);
+  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1, &workgroup_count[1]);
+  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 2, &workgroup_count[2]);
+
+  printf ("Taille maximale des workgroups:\n\tx:%u\n\ty:%u\n\tz:%u\n",
+  workgroup_size[0], workgroup_size[1], workgroup_size[2]);
+
+  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &workgroup_size[0]);
+  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1, &workgroup_size[1]);
+  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2, &workgroup_size[2]);
+
+  printf ("Nombre maximal d'invocation locale:\n\tx:%u\n\ty:%u\n\tz:%u\n",
+  workgroup_size[0], workgroup_size[1], workgroup_size[2]);
+
+  glGetIntegerv (GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &workgroup_invocations);
+  printf ("Nombre maximum d'invocation de workgroups:\n\t%u\n", workgroup_invocations);
+}
+
 int ViewerApplication::run()
 {
+
+  // Generate FBO
+  glGenFramebuffers(1, &m_FBO);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_FBO);
+
+  // Create texture objects and Bind textures to FBO
+  glGenTextures(GBufferTextureCount, m_GBufferTextures);
+  for(GLuint i = 0; i < GBufferTextureCount; ++i) {
+    glBindTexture(GL_TEXTURE_2D, m_GBufferTextures[i]);
+    glTexImage2D(GL_TEXTURE_2D, 0, m_GBufferTextureFormat[i], m_nWindowWidth, m_nWindowHeight, 0, m_GBufferPixelFormat[i], GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, m_GBufferTextureAttachment[i], GL_TEXTURE_2D, m_GBufferTextures[i], 0);
+  }
+
+  glDrawBuffers(6, m_GBufferTextureAttachment);
+  assert(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+  printWorkGroupsCapabilities();
+
   // Loader shaders
   const auto glslProgram =
       compileProgram({m_ShadersRootPath / m_AppName / m_vertexShader,
           m_ShadersRootPath / m_AppName / m_fragmentShader});
+
+  const auto compProgram =
+      compileProgram({m_ShadersRootPath / m_AppName / m_compileShader});
 
   const auto modelViewProjMatrixLocation =
       glGetUniformLocation(glslProgram.glId(), "uModelViewProjMatrix");
@@ -124,6 +185,9 @@ int ViewerApplication::run()
   // Generate white texture
   GLuint whiteTexture;
   float white[] = {1., 1., 1., 1.};
+
+  // variable for rendering mode
+  GBufferTextureType renderMode = GPosition;
 
   // Generate the texture object
   glGenTextures(1, &whiteTexture);
@@ -229,6 +293,7 @@ int ViewerApplication::run()
 
   // Lambda function to draw the scene
   const auto drawScene = [&](const Camera &camera) {
+    glslProgram.use();
     glViewport(0, 0, m_nWindowWidth, m_nWindowHeight);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -294,6 +359,9 @@ int ViewerApplication::run()
           }
         };
 
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_FBO);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     // Draw the scene referenced by gltf file
     if (model.defaultScene >= 0) {
       // TODO Draw all nodes
@@ -301,6 +369,32 @@ int ViewerApplication::run()
         drawNode(nodeIdx, glm::mat4(1));
       }
     }
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+  };
+
+  const auto computeScene = [&]() {
+    //compProgram.use();
+
+    /*for(GLuint i = 0; i < GBufferTextureCount; ++i) {
+      glActiveTexture(GL_TEXTURE0 + i);
+      glBindTexture(GL_TEXTURE_2D, m_GBufferTextures[i]);
+    }*/
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, m_FBO);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+    glReadBuffer(GL_COLOR_ATTACHMENT0 + renderMode);
+
+    //glDispatchCompute(m_nWindowWidth, m_nWindowHeight, 1);
+    //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    glBlitFramebuffer(0, 0, m_nWindowWidth, m_nWindowHeight, 0, 0, m_nWindowWidth, m_nWindowHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+    /*glActiveTexture(GL_TEXTURE0);*/
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
+    printErrorCode();
   };
 
   // Render to image output
@@ -309,6 +403,7 @@ int ViewerApplication::run()
     std::vector<unsigned char> pixels(m_nWindowWidth * m_nWindowHeight * numComponents);
     renderToImage(m_nWindowWidth, m_nWindowHeight, numComponents, pixels.data(), [&]() {
       drawScene(cameraController->getCamera());
+      computeScene();
     });
     flipImageYAxis(m_nWindowWidth, m_nWindowHeight, numComponents, pixels.data());
     const auto strPath = m_OutputPath.string();
@@ -331,6 +426,7 @@ int ViewerApplication::run()
 
     const auto camera = cameraController->getCamera();
     drawScene(camera);
+    computeScene();
 
     // GUI code:
     imguiNewFrame();
@@ -397,6 +493,32 @@ int ViewerApplication::run()
           if (ImGui::ColorEdit3("Light Color", (float *)&lightColor) ||
               ImGui::SliderFloat("Ligth Intensity", &lightIntensityFactor, 0.f, 10.f)) {
             lightIntensity = lightColor * lightIntensityFactor;
+          }
+
+          // Radio buttons to switch render
+          static int renderType = 0;
+          if (ImGui::RadioButton("Position", &renderType, 0)) {
+            renderMode = GPosition;
+          }
+          ImGui::SameLine();
+          if (ImGui::RadioButton("Normal", &renderType, 1)) {
+            renderMode = GNormal;
+          }
+          ImGui::SameLine();
+          if (ImGui::RadioButton("Ambient", &renderType, 2)) {
+            renderMode = GAmbient;
+          }
+          ImGui::SameLine();
+          if (ImGui::RadioButton("Diffuse", &renderType, 3)) {
+            renderMode = GDiffuse;
+          }
+          ImGui::SameLine();
+          if (ImGui::RadioButton("Emissive", &renderType, 4)) {
+            renderMode = GEmissive;
+          }
+          ImGui::SameLine();
+          if (ImGui::RadioButton("Specular", &renderType, 5)) {
+            renderMode = GSpecular;
           }
         }
       }
