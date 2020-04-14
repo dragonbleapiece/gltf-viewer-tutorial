@@ -69,6 +69,8 @@ void printWorkGroupsCapabilities() {
 int ViewerApplication::run()
 {
 
+  /// FOR DEFERRED RENDERING
+
   // Generate FBO
   glGenFramebuffers(1, &m_FBO);
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_FBO);
@@ -89,13 +91,42 @@ int ViewerApplication::run()
 
   printWorkGroupsCapabilities();
 
+  /// FOR SHADOW MAPPING
+
+  // Generate FBO
+  glGenFramebuffers(1, &m_directionalSMFBO);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_directionalSMFBO);
+
+  // Generate Texture
+  glGenTextures(1, &m_directionalSMTexture);
+  glBindTexture(GL_TEXTURE_2D, m_directionalSMTexture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, m_nDirectionalSMResolution, m_nDirectionalSMResolution, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_directionalSMTexture, 0);
+
+  assert(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+  // Generate sampler
+  glGenSamplers(1, &m_directionalSMSampler);
+  glSamplerParameteri(m_directionalSMSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glSamplerParameteri(m_directionalSMSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glSamplerParameteri(m_directionalSMSampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  glSamplerParameteri(m_directionalSMSampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+
   // Loader shaders
   const auto glslProgram =
       compileProgram({m_ShadersRootPath / m_AppName / m_vertexShader,
           m_ShadersRootPath / m_AppName / m_fragmentShader});
 
   const auto compProgram =
-      compileProgram({m_ShadersRootPath / m_AppName / m_compileShader});
+      compileProgram({m_ShadersRootPath / m_AppName / m_computeShader});
+
+  const auto directionalSMProgram =
+      compileProgram({m_ShadersRootPath / m_AppName / m_vertexSMShader,
+          m_ShadersRootPath / m_AppName / m_fragmentSMShader});
 
   // MATRICES
 
@@ -137,29 +168,32 @@ int ViewerApplication::run()
 
 
   // Compute Shader Uniforms
-  const auto cPositionLocation =
-      glGetUniformLocation(compProgram.glId(), "uPositionTexture");
-  const auto cNormalLocation =
-      glGetUniformLocation(compProgram.glId(), "uNormalTexture");
-  const auto cAmbientLocation =
-      glGetUniformLocation(compProgram.glId(), "uAmbientTexture");
-  const auto cDiffuseLocation =
-      glGetUniformLocation(compProgram.glId(), "uDiffuseTexture");
-  const auto cEmissiveLocation =
-      glGetUniformLocation(compProgram.glId(), "uEmissiveTexture");
-  const auto cSpecularLocation =
-      glGetUniformLocation(compProgram.glId(), "uSpecularTexture");
 
-  const auto cViewWidthLocation =
-      glGetUniformLocation(compProgram.glId(), "uViewWidth");
-  const auto cViewHeightLocation =
-      glGetUniformLocation(compProgram.glId(), "uViewHeight");
+  const GLint cTexturesLocation[6] = {
+    glGetUniformLocation(compProgram.glId(), "uPositionTexture"),
+    glGetUniformLocation(compProgram.glId(), "uNormalTexture"),
+    glGetUniformLocation(compProgram.glId(), "uAmbientTexture"),
+    glGetUniformLocation(compProgram.glId(), "uDiffuseTexture"),
+    glGetUniformLocation(compProgram.glId(), "uEmissiveTexture"),
+    glGetUniformLocation(compProgram.glId(), "uSpecularTexture")
+  };
 
-  const GLint cTexturesLocation[6] = {cPositionLocation, cNormalLocation, cAmbientLocation, cDiffuseLocation, cEmissiveLocation, cSpecularLocation};
+  const auto cDirLightViewProjMatrixLocation =
+      glGetUniformLocation(compProgram.glId(), "uDirLightViewProjMatrix");
+  const auto cDirLightShadowMapBiasLocation =
+      glGetUniformLocation(compProgram.glId(), "uDirLightShadowMapBias");
+  const auto cDirLightShadowMapLocation =
+      glGetUniformLocation(compProgram.glId(), "uDirLightShadowMap");
 
-  for(int i = 0; i < 6; ++i) {
-    std::cout << cTexturesLocation[i] << std::endl;
-  }
+  // For depthMap display
+  const auto cDepthDisplayLocation =
+      glGetUniformLocation(compProgram.glId(), "uDisplayDepth");
+
+  // ShadowMap Shader Uniforms
+  const auto dirLightViewProjMatrixLocation = 
+      glGetUniformLocation(directionalSMProgram.glId(), "uDirLightViewProjMatrix");
+  const auto modelMatrixLocation = 
+      glGetUniformLocation(directionalSMProgram.glId(), "uModelMatrix");
 
   // LOADS MODEL
 
@@ -196,6 +230,25 @@ int ViewerApplication::run()
 
   const float cameraSpeed = 1.f;
 
+  // Light Variables
+  glm::vec3 lightDirection(1., 1., 1.);
+  glm::vec3 lightIntensity(1., 1., 1.);
+
+  // Lights calculations
+  static const auto computeDirectionVectorUp = [](float phiRadians, float thetaRadians)
+  {
+      const auto cosPhi = glm::cos(phiRadians);
+      const auto sinPhi = glm::sin(phiRadians);
+      const auto cosTheta = glm::cos(thetaRadians);
+      return -glm::normalize(glm::vec3(sinPhi * cosTheta, -glm::sin(thetaRadians), cosPhi * cosTheta));
+  };
+
+  const float sceneRadius = glm::length(bboxDiagonal) * 0.5f;
+
+  auto dirLightUpVector = up;
+  auto dirLightViewMatrix = glm::lookAt(eye + lightDirection * sceneRadius, eye, up);
+  const auto dirLightProjMatrix = glm::ortho(-sceneRadius, sceneRadius, -sceneRadius, sceneRadius, 0.01f * sceneRadius, 2.f * sceneRadius);
+
   // TODO Implement a new CameraController model and use it instead. Propose the
   // choice from the GUI
   std::unique_ptr<CameraController> cameraController = std::make_unique<TrackballCameraController>(m_GLFWHandle.window(), 0.01f);
@@ -214,6 +267,12 @@ int ViewerApplication::run()
 
   // variable for rendering mode
   GBufferTextureType renderMode = GPosition;
+
+  // variable for shadow map recalculation
+  bool directionalSMDirty = true;
+
+  // variable for shadow map bias
+  float shadowMapBias = 0.f;
 
   // Generate the texture object
   glGenTextures(1, &whiteTexture);
@@ -245,10 +304,6 @@ int ViewerApplication::run()
   // Setup OpenGL state for rendering
   glEnable(GL_DEPTH_TEST);
   glslProgram.use();
-
-  // Light Variables
-  glm::vec3 lightDirection(1., 1., 1.);
-  glm::vec3 lightIntensity(1., 1., 1.);
 
   // Lambda function to bind material
   const auto bindMaterial = [&](const auto materialIndex) {
@@ -399,6 +454,69 @@ int ViewerApplication::run()
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
   };
 
+  const auto drawShadowMap = [&]() {
+    directionalSMProgram.use();
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_directionalSMFBO);
+    glViewport(0, 0, m_nDirectionalSMResolution, m_nDirectionalSMResolution);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glUniformMatrix4fv(dirLightViewProjMatrixLocation, 1, GL_FALSE, glm::value_ptr(dirLightProjMatrix * dirLightViewMatrix));
+
+    // The recursive function that should draw a node
+    // We use a std::function because a simple lambda cannot be recursive
+    const std::function<void(int, const glm::mat4 &)> drawNode =
+        [&](int nodeIdx, const glm::mat4 &parentMatrix) {
+          // TODO The drawNode function
+          const auto &node = model.nodes[nodeIdx];
+
+          glm::mat4 modelMatrix = getLocalToWorldMatrix(node, parentMatrix);
+
+          if(node.mesh >= 0) {
+            
+            glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, glm::value_ptr(modelMatrix));
+
+            const auto &mesh = model.meshes[node.mesh];
+            const auto &vaoRange = meshIndexToVaoRange[node.mesh];
+
+            for(size_t primitiveIdx = 0; primitiveIdx < mesh.primitives.size(); ++primitiveIdx) {
+              const auto &primitive = mesh.primitives[primitiveIdx];
+              
+              const GLuint vao = vertexArrayObjects[vaoRange.begin + primitiveIdx];
+
+              glBindVertexArray(vao);
+
+              if(primitive.indices >= 0) {
+                const auto &accessor = model.accessors[primitive.indices];
+                const auto &bufferView = model.bufferViews[accessor.bufferView];
+                const auto byteOffset = bufferView.byteOffset + accessor.byteOffset;
+
+                glDrawElements(primitive.mode, GLsizei(accessor.count), accessor.componentType,(const GLvoid*)byteOffset);
+              } else {
+                const auto accessorIdx = (*begin(primitive.attributes)).second;
+                const auto &accessor = model.accessors[accessorIdx];
+                glDrawArrays(primitive.mode, 0, GLsizei(accessor.count));
+              }
+            }
+            glBindVertexArray(0);
+          }
+
+          // Draw children
+          for (const auto childNodeIdx : node.children) {
+            drawNode(childNodeIdx, modelMatrix);
+          }
+        };
+
+    // Draw the scene referenced by gltf file
+    if (model.defaultScene >= 0) {
+      // TODO Draw all nodes
+      for(const auto nodeIdx : model.scenes[model.defaultScene].nodes) {
+        drawNode(nodeIdx, glm::mat4(1));
+      }
+    }
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+  };
+
   // For Compute shader result output
 
   GLuint fboResult;
@@ -417,20 +535,41 @@ int ViewerApplication::run()
   assert(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
-  const auto computeScene = [&]() {
+  const auto computeScene = [&](const Camera &camera) {
     
-    if(renderMode < GBufferTextureCount) { // If only one texture is rendered
+    if(renderMode < GBufferTextureCount - 1) { // If only one texture is rendered
       glBindFramebuffer(GL_READ_FRAMEBUFFER, m_FBO);
       glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
       glReadBuffer(GL_COLOR_ATTACHMENT0 + renderMode);
       glBlitFramebuffer(0, 0, m_nWindowWidth, m_nWindowHeight, 0, 0, m_nWindowWidth, m_nWindowHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
       glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    } else if(renderMode == GDepth) { // For Depth Map
+      compProgram.use();
+      
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, fboResult);
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+      glUniform1i(cDepthDisplayLocation, 1);
+      glActiveTexture(GL_TEXTURE0);
+      //glBindTexture(GL_TEXTURE_2D, m_directionalSMTexture);
+      //glBindSampler(m_directionalSMTexture, m_directionalSMSampler);
+      glBindTexture(GL_TEXTURE_2D, m_GBufferTextures[GDepth]);
+      glUniform1i(cDirLightShadowMapLocation, 0);
+
+      glDispatchCompute(m_nWindowWidth, m_nWindowHeight, 1);
+      glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+      glBlitFramebuffer(0, 0, m_nWindowWidth, m_nWindowHeight, 0, 0, m_nWindowWidth, m_nWindowHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
     } else { // Else, Mix of textures so call the compute shader
       compProgram.use();
       
       glBindFramebuffer(GL_READ_FRAMEBUFFER, fboResult);
       glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+      glUniform1i(cDepthDisplayLocation, 0);
 
       for(GLuint i = 0; i < GBufferTextureCount - 1; ++i) {
         glActiveTexture(GL_TEXTURE0 + i);
@@ -438,12 +577,20 @@ int ViewerApplication::run()
         glUniform1i(cTexturesLocation[i], i);
       }
 
-      glUniform1f(cViewWidthLocation, (float) m_nWindowWidth);
-      glUniform1f(cViewHeightLocation, (float) m_nWindowHeight);
+      glActiveTexture(GL_TEXTURE0 + GBufferTextureCount - 1);
+      glBindTexture(GL_TEXTURE_2D, m_directionalSMTexture);
+      glBindSampler(m_directionalSMTexture, m_directionalSMSampler);
+      glUniform1i(cDirLightShadowMapLocation, GBufferTextureCount - 1);
+
+      //const auto rcpViewMatrix = glm::inverse(camera.getViewMatrix()); // Inverse de la view matrix de la caméra
+      glUniformMatrix4fv(cDirLightViewProjMatrixLocation, 1, GL_FALSE, glm::value_ptr(dirLightProjMatrix * dirLightViewMatrix));
+
+      glUniform1f(cDirLightShadowMapBiasLocation, shadowMapBias);
+
 
       glDispatchCompute(m_nWindowWidth, m_nWindowHeight, 1);
       glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-      glBlitFramebuffer(0, 0, m_nWindowWidth, m_nWindowHeight, 0, 0, m_nWindowWidth, m_nWindowHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+      glBlitFramebuffer(0, 0, m_nWindowWidth, m_nWindowHeight, 0, 0, m_nWindowWidth, m_nWindowHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
       glActiveTexture(GL_TEXTURE0);
       glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
@@ -457,8 +604,10 @@ int ViewerApplication::run()
     const int numComponents = 3;
     std::vector<unsigned char> pixels(m_nWindowWidth * m_nWindowHeight * numComponents);
     renderToImage(m_nWindowWidth, m_nWindowHeight, numComponents, pixels.data(), [&]() {
-      drawScene(cameraController->getCamera());
-      computeScene();
+      const auto camera = cameraController->getCamera();
+      drawShadowMap();
+      drawScene(camera);
+      computeScene(camera);
     });
     flipImageYAxis(m_nWindowWidth, m_nWindowHeight, numComponents, pixels.data());
     const auto strPath = m_OutputPath.string();
@@ -480,8 +629,17 @@ int ViewerApplication::run()
     const auto seconds = glfwGetTime();
 
     const auto camera = cameraController->getCamera();
+
+    // shadow mapping
+    if(directionalSMDirty) {
+
+      drawShadowMap();
+      directionalSMDirty = false;
+    }
+
+    // rendering
     drawScene(camera);
-    computeScene();
+    computeScene(camera);
 
     // GUI code:
     imguiNewFrame();
@@ -530,8 +688,11 @@ int ViewerApplication::run()
           static float phi = 0.0f;
           static bool lightFromCamera = true;
           ImGui::Checkbox("Light from camera", &lightFromCamera);
+          auto temp = lightDirection; // check if lightDirection has changed
           if (lightFromCamera) {
             lightDirection = -camera.front();
+            dirLightUpVector = camera.up();
+            dirLightViewMatrix = glm::lookAt(camera.eye() + lightDirection * sceneRadius, camera.eye(), camera.up());
           } else {
             if (ImGui::SliderFloat("Theta", &theta, 0.f, glm::pi<float>()) ||
                 ImGui::SliderFloat("Phi", &phi, 0, 2.f * glm::pi<float>())) {
@@ -540,6 +701,8 @@ int ViewerApplication::run()
                 glm::cos(theta),
                 glm::sin(theta) * glm::sin(phi)
               );
+              dirLightUpVector = computeDirectionVectorUp(phi, theta);
+              dirLightViewMatrix = glm::lookAt(bboxCenter + lightDirection * sceneRadius, bboxCenter, dirLightUpVector); // Will not work if lightDirection is colinear to lightUpVector
             }
           }
 
@@ -550,6 +713,12 @@ int ViewerApplication::run()
             lightIntensity = lightColor * lightIntensityFactor;
           }
 
+          if(temp != lightDirection) {
+            directionalSMDirty = true;
+          }
+        }
+
+        if (ImGui::CollapsingHeader("Rendering", ImGuiTreeNodeFlags_DefaultOpen)) {
           // Radio buttons to switch render
           static int renderType = 0;
           if (ImGui::RadioButton("Position", &renderType, 0)) {
@@ -576,8 +745,18 @@ int ViewerApplication::run()
             renderMode = GSpecular;
           }
           ImGui::SameLine();
-          if (ImGui::RadioButton("Mix", &renderType, 6)) {
+          if (ImGui::RadioButton("Depth", &renderType, 6)) {
+            renderMode = GDepth;
+          }
+          ImGui::SameLine();
+          if (ImGui::RadioButton("Mix", &renderType, 7)) {
             renderMode = GBufferTextureCount;
+          }
+        }
+
+        if (ImGui::CollapsingHeader("ShadowMap", ImGuiTreeNodeFlags_DefaultOpen)) {
+          if(ImGui::SliderFloat("Bias", &shadowMapBias, 0.f, 1.f)) {
+            // void ?
           }
         }
       }

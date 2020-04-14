@@ -3,6 +3,7 @@
 in vec3 vViewSpaceNormal;
 in vec3 vViewSpacePosition;
 in vec2 vTexCoords;
+in vec3 vPosition;
 
 uniform vec3 uLightDirection;
 uniform vec3 uLightIntensity;
@@ -55,7 +56,7 @@ void main()
   vec3 N = normalize(vViewSpaceNormal);
   fNormal = N;
   vec3 V = normalize(-vViewSpacePosition);
-  fPosition = V;
+  fPosition = vPosition;
   vec3 L = uLightDirection;
   vec3 H = normalize(L + V);
 

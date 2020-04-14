@@ -32,12 +32,26 @@ private:
     GBufferTextureCount
   };
 
+  // Texture Objects Ids
   GLuint m_GBufferTextures[GBufferTextureCount];
+
+  // Formats
   const GLenum m_GBufferTextureFormat[GBufferTextureCount] = { GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_DEPTH_COMPONENT32F };
+
+  // Pixel formats
   const GLenum m_GBufferPixelFormat[GBufferTextureCount] = { GL_RGB, GL_RGB, GL_RGB, GL_RGB, GL_RGB, GL_RGB, GL_DEPTH_COMPONENT };
+  
+  // Attachments
   const GLenum m_GBufferTextureAttachment[GBufferTextureCount] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT5, GL_DEPTH_ATTACHMENT };
 
+  // FBO for Texture objects
   GLuint m_FBO;
+
+  // For Shadow Map
+  GLuint m_directionalSMTexture;
+  GLuint m_directionalSMFBO;
+  GLuint m_directionalSMSampler;
+  int32_t m_nDirectionalSMResolution = 512;
 
   // A range of indices in a vector containing Vertex Array Objects
   struct VaoRange
@@ -56,7 +70,9 @@ private:
   fs::path m_gltfFilePath;
   std::string m_vertexShader = "geometryPass.vs.glsl";
   std::string m_fragmentShader = "geometryPass.fs.glsl";//"diffuse_directional_light.fs.glsl";//"normals.fs.glsl";
-  std::string m_compileShader = "defered.cs.glsl";
+  std::string m_vertexSMShader = "directionalSM.vs.glsl";
+  std::string m_fragmentSMShader = "directionalSM.fs.glsl";
+  std::string m_computeShader = "shadingPass.cs.glsl";
 
 
   bool m_hasUserCamera = false;
