@@ -101,8 +101,6 @@ int ViewerApplication::run()
   glGenTextures(1, &m_directionalSMTexture);
   glBindTexture(GL_TEXTURE_2D, m_directionalSMTexture);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, m_nDirectionalSMResolution, m_nDirectionalSMResolution, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_directionalSMTexture, 0);
 
   assert(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
@@ -114,7 +112,18 @@ int ViewerApplication::run()
   glSamplerParameteri(m_directionalSMSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glSamplerParameteri(m_directionalSMSampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
   glSamplerParameteri(m_directionalSMSampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  glSamplerParameteri(m_directionalSMSampler, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+  glSamplerParameteri(m_directionalSMSampler, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 
+  // Generate original sampler for debugging
+  GLuint directionalSMSamplerOrig;
+  glGenSamplers(1, &directionalSMSamplerOrig);
+  glSamplerParameteri(directionalSMSamplerOrig, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glSamplerParameteri(directionalSMSamplerOrig, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glSamplerParameteri(directionalSMSamplerOrig, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  glSamplerParameteri(directionalSMSamplerOrig, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  glSamplerParameteri(directionalSMSamplerOrig, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+  glSamplerParameteri(directionalSMSamplerOrig, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 
   // Loader shaders
   const auto glslProgram =
@@ -184,6 +193,14 @@ int ViewerApplication::run()
       glGetUniformLocation(compProgram.glId(), "uDirLightShadowMapBias");
   const auto cDirLightShadowMapLocation =
       glGetUniformLocation(compProgram.glId(), "uDirLightShadowMap");
+  const auto cDirLightShadowMapOrigLocation =
+      glGetUniformLocation(compProgram.glId(), "uDirLightShadowMapOrig");
+
+
+  const auto cDirLightShadowMapSampleCountLocation =
+      glGetUniformLocation(compProgram.glId(), "uDirLightShadowMapSampleCount");
+  const auto cDirLightShadowMapSpreadLocation =
+      glGetUniformLocation(compProgram.glId(), "uDirLightShadowMapSpread");
 
   // For depthMap display
   const auto cDepthDisplayLocation =
@@ -271,8 +288,11 @@ int ViewerApplication::run()
   // variable for shadow map recalculation
   bool directionalSMDirty = true;
 
-  // variable for shadow map bias
+  // variables for shadow map
   float shadowMapBias = 0.f;
+  int shadowMapSampleCount = 1;
+  float shadowMapSpread = 0.0005f;
+  const float SHADOWMAP_SPREAD_SCALE = 0.0001f;
 
   // Generate the texture object
   glGenTextures(1, &whiteTexture);
@@ -303,7 +323,6 @@ int ViewerApplication::run()
 
   // Setup OpenGL state for rendering
   glEnable(GL_DEPTH_TEST);
-  glslProgram.use();
 
   // Lambda function to bind material
   const auto bindMaterial = [&](const auto materialIndex) {
@@ -553,9 +572,9 @@ int ViewerApplication::run()
       glUniform1i(cDepthDisplayLocation, 1);
       glActiveTexture(GL_TEXTURE0);
       //glBindTexture(GL_TEXTURE_2D, m_directionalSMTexture);
-      //glBindSampler(m_directionalSMTexture, m_directionalSMSampler);
+      //glBindSampler(0, directionalSMSamplerOrig);
       glBindTexture(GL_TEXTURE_2D, m_GBufferTextures[GDepth]);
-      glUniform1i(cDirLightShadowMapLocation, 0);
+      glUniform1i(cDirLightShadowMapOrigLocation, 0);
 
       glDispatchCompute(m_nWindowWidth, m_nWindowHeight, 1);
       glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -579,8 +598,11 @@ int ViewerApplication::run()
 
       glActiveTexture(GL_TEXTURE0 + GBufferTextureCount - 1);
       glBindTexture(GL_TEXTURE_2D, m_directionalSMTexture);
-      glBindSampler(m_directionalSMTexture, m_directionalSMSampler);
+      glBindSampler(GBufferTextureCount - 1, m_directionalSMSampler);
       glUniform1i(cDirLightShadowMapLocation, GBufferTextureCount - 1);
+
+      glUniform1i(cDirLightShadowMapSampleCountLocation, shadowMapSampleCount);
+      glUniform1f(cDirLightShadowMapSpreadLocation, shadowMapSpread * SHADOWMAP_SPREAD_SCALE);
 
       const auto rcpViewMatrix = glm::inverse(camera.getViewMatrix()); // Inverse de la view matrix de la caméra
       glUniformMatrix4fv(cDirLightViewProjMatrixLocation, 1, GL_FALSE, glm::value_ptr(dirLightProjMatrix * dirLightViewMatrix * rcpViewMatrix));
@@ -756,7 +778,13 @@ int ViewerApplication::run()
 
         if (ImGui::CollapsingHeader("ShadowMap", ImGuiTreeNodeFlags_DefaultOpen)) {
           if(ImGui::SliderFloat("Bias", &shadowMapBias, 0.f, 1.f)) {
-            // void ?
+            // void
+          }
+          if(ImGui::SliderInt("SampleCount", &shadowMapSampleCount, 1, 10)) {
+            // void
+          }
+          if(ImGui::SliderFloat("Spread", &shadowMapSpread, 0.f, 10.f)) {
+            // void
           }
         }
       }
