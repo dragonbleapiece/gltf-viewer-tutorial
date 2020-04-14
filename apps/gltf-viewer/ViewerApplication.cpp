@@ -246,7 +246,7 @@ int ViewerApplication::run()
   const float sceneRadius = glm::length(bboxDiagonal) * 0.5f;
 
   auto dirLightUpVector = up;
-  auto dirLightViewMatrix = glm::lookAt(eye + lightDirection * sceneRadius, eye, up);
+  auto dirLightViewMatrix = glm::lookAt(eye, bboxCenter, up);
   const auto dirLightProjMatrix = glm::ortho(-sceneRadius, sceneRadius, -sceneRadius, sceneRadius, 0.01f * sceneRadius, 2.f * sceneRadius);
 
   // TODO Implement a new CameraController model and use it instead. Propose the
@@ -582,8 +582,8 @@ int ViewerApplication::run()
       glBindSampler(m_directionalSMTexture, m_directionalSMSampler);
       glUniform1i(cDirLightShadowMapLocation, GBufferTextureCount - 1);
 
-      //const auto rcpViewMatrix = glm::inverse(camera.getViewMatrix()); // Inverse de la view matrix de la caméra
-      glUniformMatrix4fv(cDirLightViewProjMatrixLocation, 1, GL_FALSE, glm::value_ptr(dirLightProjMatrix * dirLightViewMatrix));
+      const auto rcpViewMatrix = glm::inverse(camera.getViewMatrix()); // Inverse de la view matrix de la caméra
+      glUniformMatrix4fv(cDirLightViewProjMatrixLocation, 1, GL_FALSE, glm::value_ptr(dirLightProjMatrix * dirLightViewMatrix * rcpViewMatrix));
 
       glUniform1f(cDirLightShadowMapBiasLocation, shadowMapBias);
 
@@ -692,7 +692,7 @@ int ViewerApplication::run()
           if (lightFromCamera) {
             lightDirection = -camera.front();
             dirLightUpVector = camera.up();
-            dirLightViewMatrix = glm::lookAt(camera.eye() + lightDirection * sceneRadius, camera.eye(), camera.up());
+            dirLightViewMatrix = camera.getViewMatrix();
           } else {
             if (ImGui::SliderFloat("Theta", &theta, 0.f, glm::pi<float>()) ||
                 ImGui::SliderFloat("Phi", &phi, 0, 2.f * glm::pi<float>())) {

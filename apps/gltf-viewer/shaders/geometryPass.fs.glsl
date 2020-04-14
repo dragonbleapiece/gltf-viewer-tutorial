@@ -56,7 +56,7 @@ void main()
   vec3 N = normalize(vViewSpaceNormal);
   fNormal = N;
   vec3 V = normalize(-vViewSpacePosition);
-  fPosition = vPosition;
+  fPosition = vViewSpacePosition;
   vec3 L = uLightDirection;
   vec3 H = normalize(L + V);
 
